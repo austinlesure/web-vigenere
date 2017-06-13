@@ -1,83 +1,57 @@
 from flask import Flask, request, redirect
 from vigenere import encrypt
+import caesar
 import cgi
+import os
+import jinja2
+
+template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir), autoescape = True)
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
 
-page_header = '''
-    <!doctype html>
-    <html>
-        <head>
-            <title>Web Vigenere</title>
-            <style>
-            h1 {
-                text-align: center;
-                font-family: monospace;
-            }
-            form {
-                background-color: #eee;
-                padding: 20px;
-                margin: 0 auto;
-                width: 540px;
-                font: 16px sans-serif;
-                border-radius: 10px;
-            }
-            textarea {
-                margin: 10px 0;
-                width: 540px;
-                height: 120px;
-            }
-            .error {
-                color: red;
-                text-align: center;
-            }
-        </style>
-        </head>
-        <body>
-            <h1>Web Vigenere</h1>
-'''
-
-page_form = '''
-            <form method='POST'>
-                <label for='keyword'>Enter keyword: </label>
-                <input type='text' name='keyword' id='keyword' value='{0}'/>
-                <br />
-                <textarea name='message' id='message'>{1}</textarea>
-                <br />
-                <input type="submit" value="Vigenere!">
-            </form>
-'''
-
-page_footer = '''
-        </body>
-    </html>
-'''
-
-@app.route('/', methods=['POST'])
-def encrypt_page():
-    keyword = cgi.escape(request.form['keyword'])
+@app.route('/vigenere', methods=['POST'])
+def vigenere_page():
+    template = jinja_env.get_template('v_form.html')
+    keyword = request.form['keyword']
     for char in keyword:
         if char.isalpha() == False:
-            error_msg = 'Keyword must only conatin latin letters.'
-            return redirect('/?error={0}'.format(error_msg))
-
-
+            error_msg = 'Error: Keyword must only contain latin letters.'
+            return redirect('/vigenere?error={0}'.format(error_msg))
     message = request.form['message']
     secret_message = encrypt(message, keyword)
-    return page_header + page_form.format(keyword, secret_message) + page_footer
+    return template.render(keyword = keyword, message = secret_message, title = 'Web Vigenere')
 
-@app.route("/")
-def index():
-
+@app.route('/vigenere')
+def v_index():
+    template = jinja_env.get_template('v_form.html')
     error = request.args.get("error")
-
     if error:
-        error_esc = cgi.escape(error, quote=True)
-        error_element = '<p class="error">' + error_esc + '</p>'
+        return template.render(error_msg = error, title = 'Web Vigenere')
     else:
-        error_element = ''
+        return template.render(title = 'Web Vigenere')
 
-    return page_header + page_form.format('', '') + error_element + page_footer
+@app.route('/caesar', methods=['POST'])
+def ceasar_page():
+    template = jinja_env.get_template('c_form.html')
+    rot = int(request.form['rotate'])
+    message = request.form['message']
+    secret_message = caesar.encrypt(message, rot)
+    return template.render(rotate = rot, message = secret_message, title = 'Web Caesar')
+
+@app.route('/caesar')
+def c_index():
+    template = jinja_env.get_template('c_form.html')
+    error = request.args.get("error")
+    if error:
+        return template.render(error_msg = error, title = 'Web Caesar')
+    else:
+        return template.render(title = 'Web Caesar')
+
+@app.route('/')
+def index():
+    template = jinja_env.get_template('index.html')
+    return template.render(title = 'Choose Encryption')
 
 app.run()

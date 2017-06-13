@@ -1,0 +1,12 @@
+{% extends 'body_form.html' %}
+
+{% block content %}
+<form method='POST'>
+    <label for='rotate'>Rotate by:</label>
+    <input type='number' name='rotate' id='rotate' value='{{rotate}}'/>
+    <br />
+    <textarea name='message' id='message'>{{message}}</textarea>
+    <br />
+    <input type="submit" value="Ceasar!">
+</form>
+{% endblock %}
